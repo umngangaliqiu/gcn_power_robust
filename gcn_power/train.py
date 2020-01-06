@@ -149,21 +149,25 @@ def main(args):
 
             # print(epoch, optimizer.state_dict())
             adjust_learning_rate(optimizer, epoch)
+            #
+            # loss.backward()
+            #
 
-            loss.backward(retain_graph=True)
-            data_grad = features.grad.data
-            adv_feature = fgsm_attack(features, 0.1, data_grad)
-
-            adv_logits = model(adv_feature)
-            loss_adv = loss_fcn(adv_logits[train_mask], labels[train_mask])
-            loss_total = torch.sum(loss, loss_adv)
-            optimizer.zero_grad()
+            # optimizer.zero_grad()
             # total = (loss_adv + loss)/2
 
-            loss_total.backward()
+            loss.backward()
             # print(np.sum((attacked_feature-features).detach().numpy()))
+            data_grad = features.grad.data
+            adv_feature = fgsm_attack(features, 10, data_grad)
 
+            # optimizer.step()
+            # optimizer.zero_grad()
+            adv_logits = model(adv_feature)
+            loss_adv = loss_fcn(adv_logits[train_mask], labels[train_mask])
+            loss_adv.backward()
             optimizer.step()
+
 
             if epoch >= 3:
                 dur.append(time.time() - t0)
@@ -174,7 +178,7 @@ def main(args):
             # print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
             #       "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
             #                                      acc, n_edges / np.mean(dur) / 1000))
-    test(model, 100, test_mask)
+    test(model, 10, test_mask)
 
 def test(model, epsilon,test_mask):
     acc_temp = []

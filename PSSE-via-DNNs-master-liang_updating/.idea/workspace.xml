@@ -2,16 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="790d35ae-4df0-4173-aa79-2ebb6c1d4a05" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/gcn_power.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/libraries/R_User_Library.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model_logs/118_nn1_8H_PSSE_epoch_200.h5" beforeDir="false" afterPath="$PROJECT_DIR$/model_logs/118_nn1_8H_PSSE_epoch_200.h5" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/simple_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/simple_test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../gcn_power/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../gcn_power/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../gcn_power/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/../gcn_power/train.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
