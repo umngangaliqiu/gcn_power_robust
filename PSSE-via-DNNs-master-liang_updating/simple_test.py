@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-SEED=1234
 import numpy as np
 import math
 from matplotlib import pyplot as plt
@@ -34,6 +33,7 @@ from model import *
 ###################
 
 # configure args
+SEED = 1234
 tf.set_random_seed(SEED)
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -74,8 +74,8 @@ input_shape = (train_x.shape[1],)  ########################?????  (490,)
 print(train_x.shape[1])
 print(train_x)
 epoch_num = 200
-psse_model = nn1_8H_psse(input_shape, train_y.shape[1])
-# psse_model = lav_psse(input_shape, train_y.shape[1])
+# psse_model = nn1_8H_psse(input_shape, train_y.shape[1])
+psse_model = lav_psse(input_shape, train_y.shape[1])
 
 
 print(train_y.shape[1])

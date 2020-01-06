@@ -20,7 +20,7 @@ data_labels = bus118data['labels'].astype(np.float32)
 data_adj = bus118data['adj']
 
 
-window_size = np.minimum(1000000, data_inputs.shape[1])
+window_size = np.minimum(10, data_inputs.shape[1])
 train_portion = int(0.8 * window_size)
 train_x = data_inputs[:, :train_portion]
 train_y = data_labels[:, :train_portion]
@@ -38,6 +38,12 @@ input_test_mask = np.array(np.ones(bus_no), dtype=np.bool)
 #     for _, param_group in optimizer.state_dict():
 #         param_group['lr'] = lr
 #     return optimizer
+
+def fgsm_attack(input_clean, epsilon, data_grad):
+    sign_datagrad = data_grad.sign()
+    purturbed_input = input_clean + epsilon * sign_datagrad
+    return purturbed_input
+
 
 def adjust_learning_rate(optimizer, epoch):
     """Sets the learning rate to the initial LR decayed by 10 every 10 epochs"""
@@ -126,19 +132,37 @@ def main(args):
         np.random.shuffle(shufle_index)
         for t in range(train_portion):
             features, labels = load_data(shufle_index[t])
+            features.requires_grad = True
+
             model.train()
             if epoch >= 3:
                 t0 = time.time()
+
+
             # forward
             logits = model(features)
             # TO DO: change this
             loss = loss_fcn(logits[train_mask], labels[train_mask])
 
+
             optimizer.zero_grad()
+
             # print(epoch, optimizer.state_dict())
             adjust_learning_rate(optimizer, epoch)
 
-            loss.backward()
+            loss.backward(retain_graph=True)
+            data_grad = features.grad.data
+            adv_feature = fgsm_attack(features, 0.1, data_grad)
+
+            adv_logits = model(adv_feature)
+            loss_adv = loss_fcn(adv_logits[train_mask], labels[train_mask])
+            loss_total = torch.sum(loss, loss_adv)
+            optimizer.zero_grad()
+            # total = (loss_adv + loss)/2
+
+            loss_total.backward()
+            # print(np.sum((attacked_feature-features).detach().numpy()))
+
             optimizer.step()
 
             if epoch >= 3:
@@ -147,19 +171,41 @@ def main(args):
             acc = evaluate(model, features, labels, train_mask)
 
             learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
-            print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
-                  "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
-                                                 acc, n_edges / np.mean(dur) / 1000))
+            # print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
+            #       "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
+            #                                      acc, n_edges / np.mean(dur) / 1000))
+    test(model, 100, test_mask)
 
-
-    # TODO: test
+def test(model, epsilon,test_mask):
     acc_temp = []
+    acc_temp_attack = []
+    loss_fcn_test = torch.nn.MSELoss()
     for iter in range(window_size-train_portion):
         iter = train_portion+iter
-        acc_temp.append(np.array(evaluate_real_image(model, load_data(iter)[0], load_data(iter)[1], test_mask)))
+        feature_test = load_data(iter)[0]
+        label_test = load_data(iter)[1]
+        feature_test.requires_grad = True
+        logits_test = model(feature_test)
+        loss = loss_fcn_test(logits_test[test_mask], label_test[test_mask])
+        model.zero_grad()
+        loss.backward()
+        data_grad = feature_test.grad.data
+        attacked_feature = fgsm_attack(feature_test, epsilon, data_grad)
+        acc_temp.append(np.array(evaluate_real_image(model, feature_test, label_test, test_mask)))
+        acc_temp_attack.append(np.array(evaluate_real_image(model, attacked_feature, label_test, test_mask)))
 
     acc_test = np.sqrt(np.mean(acc_temp))
-    print("test accuracy {:.4f}".format(acc_test))
+    acc_test_attack = np.sqrt(np.mean(acc_temp_attack))
+    print("test accuracy {:.4f}| test accuracy with attack {:.4f}".format(acc_test, acc_test_attack))
+
+# #    TODO: test
+#     acc_temp = []
+#     for iter in range(window_size-train_portion):
+#         iter = train_portion+iter
+#         acc_temp.append(np.array(evaluate_real_image(model, load_data(iter)[0], load_data(iter)[1], test_mask)))
+#
+#     acc_test = np.sqrt(np.mean(acc_temp))
+#     print("test accuracy {:.4f}".format(acc_test))
 
 
 if __name__ == '__main__':
@@ -171,7 +217,7 @@ if __name__ == '__main__':
             help="gpu")
     parser.add_argument("--lr", type=float, default=0.0001,
             help="learning rate")
-    parser.add_argument("--n-epochs", type=int, default=100,
+    parser.add_argument("--n-epochs", type=int, default=10,
             help="number of training epochs")
     parser.add_argument("--n-input-features", type=int, default=3,
             help="number of input features")
@@ -179,7 +225,7 @@ if __name__ == '__main__':
             help="number of outputs per node")
     parser.add_argument("--n-hidden", type=int, default=512,
             help="number of hidden gcn units")
-    parser.add_argument("--n-layers", type=int, default=3,
+    parser.add_argument("--n-layers", type=int, default=6,
             help="number of hidden gcn layers")
     parser.add_argument("--weight-decay", type=float, default=5e-5,
             help="Weight for L2 loss")

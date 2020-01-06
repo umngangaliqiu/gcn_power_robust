@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="790d35ae-4df0-4173-aa79-2ebb6c1d4a05" name="Default Changelist" comment="" />
+    <list default="true" id="790d35ae-4df0-4173-aa79-2ebb6c1d4a05" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/gcn_power.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/libraries/R_User_Library.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../gcn_power/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model_logs/118_nn1_8H_PSSE_epoch_200.h5" beforeDir="false" afterPath="$PROJECT_DIR$/model_logs/118_nn1_8H_PSSE_epoch_200.h5" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/simple_test.py" beforeDir="false" afterPath="$PROJECT_DIR$/simple_test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../gcn_power/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/../gcn_power/train.py" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,8 +51,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/simple_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="368">
-              <caret line="73" column="23" selection-start-line="73" selection-start-column="23" selection-end-line="73" selection-end-column="23" />
+            <state relative-caret-position="-552">
+              <caret line="15" column="3" selection-start-line="15" selection-start-column="3" selection-end-line="15" selection-end-column="3" />
               <folding>
                 <element signature="e#0#38#0" expanded="true" />
               </folding>
@@ -51,7 +63,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/get_plots.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="138">
+            <state relative-caret-position="1058">
               <caret line="59" column="50" selection-start-line="59" selection-start-column="50" selection-end-line="59" selection-end-column="50" />
               <folding>
                 <element signature="e#0#38#0" expanded="true" />
@@ -79,6 +91,9 @@
       <find>epoch</find>
     </findStrings>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
@@ -89,19 +104,21 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="1985" />
+  <component name="ProjectFrameBounds" extendedState="7">
+    <option name="x" value="65" />
     <option name="y" value="-4" />
     <option name="width" value="1855" />
     <option name="height" value="1084" />
   </component>
   <component name="ProjectId" id="1P9lPwxi6QYR2fzEhEfCdk733AS" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -118,11 +135,13 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../gcn_power" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="restartRequiresConfirmation" value="false" />
@@ -305,10 +324,10 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="1985" y="-4" width="1855" height="1084" extended-state="6" />
+    <frame x="65" y="-4" width="1855" height="1084" extended-state="7" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.49864864" visible="true" weight="0.15588723" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49864864" visible="true" weight="0.15754561" />
       <window_info id="Structure" order="1" sideWeight="0.50135136" side_tool="true" weight="0.1509121" />
       <window_info id="Favorites" order="2" sideWeight="0.50079745" side_tool="true" weight="0.1509121" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -321,7 +340,7 @@
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Terminal" order="8" weight="0.32960325" />
       <window_info anchor="bottom" id="Event Log" order="9" side_tool="true" />
-      <window_info anchor="bottom" id="Python Console" order="10" visible="true" weight="0.26144457" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="10" visible="true" weight="0.25484198" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -364,11 +383,6 @@
           <url>file://$PROJECT_DIR$/State-Forecasting/RNN v2v.py</url>
           <line>38</line>
           <option name="timeStamp" value="31" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/simple_test.py</url>
-          <line>54</line>
-          <option name="timeStamp" value="42" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -449,7 +463,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/get_plots.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="138">
+        <state relative-caret-position="1058">
           <caret line="59" column="50" selection-start-line="59" selection-start-column="50" selection-end-line="59" selection-end-column="50" />
           <folding>
             <element signature="e#0#38#0" expanded="true" />
@@ -459,8 +473,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/simple_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="368">
-          <caret line="73" column="23" selection-start-line="73" selection-start-column="23" selection-end-line="73" selection-end-column="23" />
+        <state relative-caret-position="-552">
+          <caret line="15" column="3" selection-start-line="15" selection-start-column="3" selection-end-line="15" selection-end-column="3" />
           <folding>
             <element signature="e#0#38#0" expanded="true" />
           </folding>
