@@ -88,11 +88,8 @@ def main(args):
 
     train_mask = input_train_mask
     test_mask = input_test_mask
-
-    # TODO: change following
     in_feats = args.n_input_features
     n_classes = args.n_classes
-
     g = DGLGraph(data_adj)
     g.add_edges(g.nodes(), g.nodes())
 
@@ -138,36 +135,22 @@ def main(args):
             if epoch >= 3:
                 t0 = time.time()
 
-
             # forward
             logits = model(features)
             # TO DO: change this
             loss = loss_fcn(logits[train_mask], labels[train_mask])
 
-
             optimizer.zero_grad()
 
-            # print(epoch, optimizer.state_dict())
             adjust_learning_rate(optimizer, epoch)
-            #
-            # loss.backward()
-            #
-
-            # optimizer.zero_grad()
-            # total = (loss_adv + loss)/2
 
             loss.backward()
-            # print(np.sum((attacked_feature-features).detach().numpy()))
             data_grad = features.grad.data
             adv_feature = fgsm_attack(features, 10, data_grad)
-
-            # optimizer.step()
-            # optimizer.zero_grad()
             adv_logits = model(adv_feature)
             loss_adv = loss_fcn(adv_logits[train_mask], labels[train_mask])
             loss_adv.backward()
             optimizer.step()
-
 
             if epoch >= 3:
                 dur.append(time.time() - t0)
@@ -179,6 +162,7 @@ def main(args):
             #       "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
             #                                      acc, n_edges / np.mean(dur) / 1000))
     test(model, 10, test_mask)
+
 
 def test(model, epsilon,test_mask):
     acc_temp = []
