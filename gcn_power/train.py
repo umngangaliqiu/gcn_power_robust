@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from dgl import DGLGraph
-from dgl.data import register_data_args, load_data
+from dgl.data import register_data_args
 import scipy.io
 
 from gcn import GCN
@@ -214,11 +214,11 @@ def main(args):
 #     acc_test = np.sqrt(np.mean(acc_temp))
 #     print("test accuracy with distributional attack {:.4f}".format(acc_test))
 
+
 def test_distr(model, gamma, steps, test_mask):
     acc_temp = []
     loss_fcn_test = torch.nn.MSELoss()
-    for iter in range(window_size-train_portion):
-        iter = train_portion+iter
+    for iter in range(train_portion, window_size):
         feature_test = load_data(iter)[0]
         label_test = load_data(iter)[1]
         adv_feature = torch.zeros(feature_test.shape, requires_grad=True)
@@ -256,13 +256,11 @@ def test_distr(model, gamma, steps, test_mask):
     print("test accuracy with distributional attack {:.4f}".format(acc_test))
 
 
-
 def test_fgsm(model, epsilon,test_mask):
     acc_temp = []
     acc_temp_attack = []
     loss_fcn_test = torch.nn.MSELoss()
-    for iter in range(window_size-train_portion):
-        iter = train_portion+iter
+    for iter in range(train_portion, window_size):
         feature_test = load_data(iter)[0]
         label_test = load_data(iter)[1]
         feature_test.requires_grad = True
