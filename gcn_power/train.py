@@ -146,7 +146,7 @@ def main(args):
 
             loss.backward()
             data_grad = features.grad.data
-            adv_feature = fgsm_attack(features, 10, data_grad)
+            adv_feature = fgsm_attack(features, 0, data_grad)
             adv_logits = model(adv_feature)
             loss_adv = loss_fcn(adv_logits[train_mask], labels[train_mask])
             loss_adv.backward()
@@ -161,10 +161,103 @@ def main(args):
             # print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
             #       "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
             #                                      acc, n_edges / np.mean(dur) / 1000))
-    test(model, 10, test_mask)
+    test_distr(model, 1.5, 10, test_mask)
+    test_fgsm(model, 2, test_mask)
+
+# def test_distr(model, gamma, steps, test_mask):
+#     acc_temp = []
+#     loss_fcn_test = torch.nn.MSELoss()
+#     for iter in range(window_size-train_portion):
+#         iter = train_portion+iter
+#         feature_test = load_data(iter)[0]
+#         label_test = load_data(iter)[1]
+#         eta = torch.zeros(feature_test.shape)
+#         # eta = feature_test
+#         x0 = feature_test
+#         feature_test.requires_grad = True
+#
+#         for s in range(steps):
+#             logits_test = model(feature_test+eta)
+#             loss = loss_fcn_test(logits_test[test_mask], label_test[test_mask])
+#             cost = loss_fcn_test(feature_test+eta, feature_test)
+#
+#             model.zero_grad()
+#             loss.backward()
+#             cost.backward()
+#             eta += 1 * torch.sign(feature_test.grad.data)
+#             feature_test.grad.data.zero_()
+#
+#         adv_feature = feature_test + eta
+#         acc_temp.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
+#
+#         #
+#         #
+#         # data_grad = feature_test.grad.data
+#         # adv_feature = feature_test + data_grad
+#         # # feature_test.requires_grad = True
+#         # # adv_feature.requires_grad = True
+#         # for s in range(steps):
+#         #     # adv_feature.requires_grad = True
+#         #     logits_adv = model(adv_feature)
+#         #     loss_adv = loss_fcn_test(logits_adv[test_mask], label_test[test_mask])
+#         #     model.zero_grad()
+#         #     loss_adv.backward()
+#         #     data_grad_adv = adv_feature.grad.data
+#         #     cost = (adv_feature-feature_test)**2
+#         #     cost.backward()
+#         #     # print(adv_feature)
+#         #     total_grad = data_grad_adv - gamma * feature_test.grad.data
+#         #     adv_feature = adv_feature + 1.0/np.sqrt(s+2)*total_grad
+#         #     # adv_feature.requires_grad = False
+#         # acc_temp.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
+#
+#     acc_test = np.sqrt(np.mean(acc_temp))
+#     print("test accuracy with distributional attack {:.4f}".format(acc_test))
+
+def test_distr(model, gamma, steps, test_mask):
+    acc_temp = []
+    loss_fcn_test = torch.nn.MSELoss()
+    for iter in range(window_size-train_portion):
+        iter = train_portion+iter
+        feature_test = load_data(iter)[0]
+        label_test = load_data(iter)[1]
+        adv_feature = torch.zeros(feature_test.shape, requires_grad=True)
+
+        feature_test.requires_grad = True
+        logits_test = model(feature_test)
+        loss = loss_fcn_test(logits_test[test_mask], label_test[test_mask])
+        model.zero_grad()
+        loss.backward()
+        eta = torch.zeros(size=feature_test.shape)
+        data_grad = feature_test.grad.data
+        eta = data_grad
+        adv_feature = feature_test + eta
+        x0 = feature_test
+        feature_test.requires_grad = True
+        # adv_feature.requires_grad = True
+        for s in range(steps):
+            # adv_feature.requires_grad = True
+            logits_adv = model(feature_test+eta)
+            loss_adv = loss_fcn_test(logits_adv[test_mask], label_test[test_mask])
+            model.zero_grad()
+            loss_adv.backward()
+            data_grad_adv = feature_test.grad.data
+            # feature_test.grad.zero_()
+            # print(feature_test.grad.data)
+            cost = loss_fcn_test(feature_test+eta, x0)
+            cost.backward()
+            # print(adv_feature)
+            total_grad = data_grad_adv - gamma * feature_test.grad.data
+            eta += 1.0/np.sqrt(s+2)*total_grad
+            adv_feature = adv_feature + eta
+        acc_temp.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
+
+    acc_test = np.sqrt(np.mean(acc_temp))
+    print("test accuracy with distributional attack {:.4f}".format(acc_test))
 
 
-def test(model, epsilon,test_mask):
+
+def test_fgsm(model, epsilon,test_mask):
     acc_temp = []
     acc_temp_attack = []
     loss_fcn_test = torch.nn.MSELoss()
@@ -181,6 +274,7 @@ def test(model, epsilon,test_mask):
         attacked_feature = fgsm_attack(feature_test, epsilon, data_grad)
         acc_temp.append(np.array(evaluate_real_image(model, feature_test, label_test, test_mask)))
         acc_temp_attack.append(np.array(evaluate_real_image(model, attacked_feature, label_test, test_mask)))
+
 
     acc_test = np.sqrt(np.mean(acc_temp))
     acc_test_attack = np.sqrt(np.mean(acc_temp_attack))
@@ -205,7 +299,7 @@ if __name__ == '__main__':
             help="gpu")
     parser.add_argument("--lr", type=float, default=0.0001,
             help="learning rate")
-    parser.add_argument("--n-epochs", type=int, default=10,
+    parser.add_argument("--n-epochs", type=int, default=2,
             help="number of training epochs")
     parser.add_argument("--n-input-features", type=int, default=3,
             help="number of input features")
