@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from dgl import DGLGraph
 from dgl.data import register_data_args
 import scipy.io
+from torch.autograd import Variable
+
 
 from gcn import GCN
 
@@ -20,7 +22,7 @@ data_labels = bus118data['labels'].astype(np.float32)
 data_adj = bus118data['adj']
 
 
-window_size = np.minimum(10, data_inputs.shape[1])
+window_size = np.minimum(100, data_inputs.shape[1])
 train_portion = int(0.8 * window_size)
 train_x = data_inputs[:, :train_portion]
 train_y = data_labels[:, :train_portion]
@@ -43,6 +45,11 @@ def fgsm_attack(input_clean, epsilon, data_grad):
     sign_datagrad = data_grad.sign()
     purturbed_input = input_clean + epsilon * sign_datagrad
     return purturbed_input
+
+# def distr_attack(model, input_clean, epsilon, data_grad):
+#     sign_datagrad = data_grad.sign()
+#     purturbed_input = input_clean + epsilon * sign_datagrad
+#     return purturbed_input
 
 
 def adjust_learning_rate(optimizer, epoch):
@@ -145,11 +152,11 @@ def main(args):
             adjust_learning_rate(optimizer, epoch)
 
             loss.backward()
-            data_grad = features.grad.data
-            adv_feature = fgsm_attack(features, 0, data_grad)
-            adv_logits = model(adv_feature)
-            loss_adv = loss_fcn(adv_logits[train_mask], labels[train_mask])
-            loss_adv.backward()
+            # data_grad = features.grad.data
+            # adv_feature = fgsm_attack(features, 0, data_grad)
+            # adv_logits = model(adv_feature)
+            # loss_adv = loss_fcn(adv_logits[train_mask], labels[train_mask])
+            # loss_adv.backward()
             optimizer.step()
 
             if epoch >= 3:
@@ -161,7 +168,7 @@ def main(args):
             # print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
             #       "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
             #                                      acc, n_edges / np.mean(dur) / 1000))
-    test_distr(model, 1.5, 10, test_mask)
+    test_distr(model, loss_fcn, 20, 4, test_mask)
     test_fgsm(model, 2, test_mask)
 
 # def test_distr(model, gamma, steps, test_mask):
@@ -215,41 +222,73 @@ def main(args):
 #     print("test accuracy with distributional attack {:.4f}".format(acc_test))
 
 
-def test_distr(model, gamma, steps, test_mask):
+def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
     acc_temp = []
     loss_fcn_test = torch.nn.MSELoss()
     for iter in range(train_portion, window_size):
         feature_test = load_data(iter)[0]
         label_test = load_data(iter)[1]
-        adv_feature = torch.zeros(feature_test.shape, requires_grad=True)
 
-        feature_test.requires_grad = True
-        logits_test = model(feature_test)
-        loss = loss_fcn_test(logits_test[test_mask], label_test[test_mask])
-        model.zero_grad()
-        loss.backward()
-        eta = torch.zeros(size=feature_test.shape)
-        data_grad = feature_test.grad.data
-        eta = data_grad
-        adv_feature = feature_test + eta
-        x0 = feature_test
-        feature_test.requires_grad = True
-        # adv_feature.requires_grad = True
-        for s in range(steps):
-            # adv_feature.requires_grad = True
-            logits_adv = model(feature_test+eta)
-            loss_adv = loss_fcn_test(logits_adv[test_mask], label_test[test_mask])
-            model.zero_grad()
-            loss_adv.backward()
-            data_grad_adv = feature_test.grad.data
-            # feature_test.grad.zero_()
-            # print(feature_test.grad.data)
-            cost = loss_fcn_test(feature_test+eta, x0)
-            cost.backward()
-            # print(adv_feature)
-            total_grad = data_grad_adv - gamma * feature_test.grad.data
-            eta += 1.0/np.sqrt(s+2)*total_grad
-            adv_feature = adv_feature + eta
+        feature_test, label_test = Variable(feature_test), Variable(label_test)
+        adv_feature = feature_test.data.clone()
+        adv_feature = Variable(adv_feature, requires_grad=True)
+
+        # Running maximizer for adversarial example
+        optimizer_adv = torch.optim.Adam([adv_feature], lr=0.01)
+        loss_phi = 0  # phi(theta,z0)
+        rho = 0  # E[c(Z,Z0)]
+        for n in range(T_adv):
+            optimizer_adv.zero_grad()
+            delta = adv_feature - feature_test
+            rho = torch.mean((torch.norm(delta.view(len(feature_test), -1), 2, 1) ** 2))
+            # rho = torch.mean((torch.norm(z_hat-x_,2,1)**2))
+            loss_zt = loss_fcn(model(adv_feature), label_test)
+            # -phi_gamma(theta,z)
+            loss_phi = - (loss_zt - gamma * rho)
+            loss_phi.backward()
+            optimizer_adv.step()
+            # adjust_lr_zt(optimizer_zt, max_lr0, n + 1)
+
+        # losses_maxItr.append(loss_phi.data[0])  # loss in max iteration phi(theta,z)
+        # rhos.append(rho.data[0])
+
+        # running the loss minimizer, using z_hat
+        # optimizer.zero_grad()
+        # loss_adversarial = loss_function(model(z_hat), y_)
+        # loss_adversarial.backward()
+        # optimizer.step()
+        # losses_adv.append(loss_adversarial.data[0])
+        #
+        #
+        #
+        #
+        # feature_test.requires_grad = True
+        # logits_test = model(feature_test)
+        # loss = loss_fcn_test(logits_test[test_mask], label_test[test_mask])
+        # model.zero_grad()
+        # loss.backward()
+        # eta = torch.zeros(size=feature_test.shape)
+        # data_grad = feature_test.grad.data
+        # eta = data_grad
+        # adv_feature = feature_test + eta
+        # x0 = feature_test
+        # feature_test.requires_grad = True
+        # # adv_feature.requires_grad = True
+        # for s in range(steps):
+        #     # adv_feature.requires_grad = True
+        #     logits_adv = model(feature_test+eta)
+        #     loss_adv = loss_fcn_test(logits_adv[test_mask], label_test[test_mask])
+        #     model.zero_grad()
+        #     loss_adv.backward()
+        #     data_grad_adv = feature_test.grad.data
+        #     # feature_test.grad.zero_()
+        #     # print(feature_test.grad.data)
+        #     cost = loss_fcn_test(feature_test+eta, x0)
+        #     cost.backward()
+        #     # print(adv_feature)
+        #     total_grad = data_grad_adv - gamma * feature_test.grad.data
+        #     eta += 1.0/np.sqrt(s+2)*total_grad
+        #     adv_feature = adv_feature + eta
         acc_temp.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
 
     acc_test = np.sqrt(np.mean(acc_temp))
@@ -276,7 +315,7 @@ def test_fgsm(model, epsilon,test_mask):
 
     acc_test = np.sqrt(np.mean(acc_temp))
     acc_test_attack = np.sqrt(np.mean(acc_temp_attack))
-    print("test accuracy {:.4f}| test accuracy with attack {:.4f}".format(acc_test, acc_test_attack))
+    print("test accuracy {:.4f}| test accuracy with FGSM attack {:.4f}".format(acc_test, acc_test_attack))
 
 # #    TODO: test
 #     acc_temp = []
@@ -295,9 +334,9 @@ if __name__ == '__main__':
             help="dropout probability")
     parser.add_argument("--gpu", type=int, default=-1,
             help="gpu")
-    parser.add_argument("--lr", type=float, default=0.0001,
+    parser.add_argument("--lr", type=float, default=0.001,
             help="learning rate")
-    parser.add_argument("--n-epochs", type=int, default=2,
+    parser.add_argument("--n-epochs", type=int, default=10,
             help="number of training epochs")
     parser.add_argument("--n-input-features", type=int, default=3,
             help="number of input features")
