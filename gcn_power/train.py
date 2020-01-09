@@ -22,7 +22,7 @@ data_labels = bus118data['labels'].astype(np.float32)
 data_adj = bus118data['adj']
 
 
-window_size = np.minimum(100, data_inputs.shape[1])
+window_size = np.minimum(20, data_inputs.shape[1])
 train_portion = int(0.8 * window_size)
 train_x = data_inputs[:, :train_portion]
 train_y = data_labels[:, :train_portion]
@@ -165,62 +165,12 @@ def main(args):
             acc = evaluate(model, features, labels, train_mask)
 
             learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
-            # print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
-            #       "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
-            #                                      acc, n_edges / np.mean(dur) / 1000))
-    test_distr(model, loss_fcn, 20, 4, test_mask)
+            print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
+                  "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
+                                                 acc, n_edges / np.mean(dur) / 1000))
+    test_distr(model, loss_fcn, gamma=0.001, T_adv=2, test_mask=test_mask) # Increasing T_adv does not affect very much,
+                                                                            # smaller gamma and smaller T_adv the better
     test_fgsm(model, 2, test_mask)
-
-# def test_distr(model, gamma, steps, test_mask):
-#     acc_temp = []
-#     loss_fcn_test = torch.nn.MSELoss()
-#     for iter in range(window_size-train_portion):
-#         iter = train_portion+iter
-#         feature_test = load_data(iter)[0]
-#         label_test = load_data(iter)[1]
-#         eta = torch.zeros(feature_test.shape)
-#         # eta = feature_test
-#         x0 = feature_test
-#         feature_test.requires_grad = True
-#
-#         for s in range(steps):
-#             logits_test = model(feature_test+eta)
-#             loss = loss_fcn_test(logits_test[test_mask], label_test[test_mask])
-#             cost = loss_fcn_test(feature_test+eta, feature_test)
-#
-#             model.zero_grad()
-#             loss.backward()
-#             cost.backward()
-#             eta += 1 * torch.sign(feature_test.grad.data)
-#             feature_test.grad.data.zero_()
-#
-#         adv_feature = feature_test + eta
-#         acc_temp.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
-#
-#         #
-#         #
-#         # data_grad = feature_test.grad.data
-#         # adv_feature = feature_test + data_grad
-#         # # feature_test.requires_grad = True
-#         # # adv_feature.requires_grad = True
-#         # for s in range(steps):
-#         #     # adv_feature.requires_grad = True
-#         #     logits_adv = model(adv_feature)
-#         #     loss_adv = loss_fcn_test(logits_adv[test_mask], label_test[test_mask])
-#         #     model.zero_grad()
-#         #     loss_adv.backward()
-#         #     data_grad_adv = adv_feature.grad.data
-#         #     cost = (adv_feature-feature_test)**2
-#         #     cost.backward()
-#         #     # print(adv_feature)
-#         #     total_grad = data_grad_adv - gamma * feature_test.grad.data
-#         #     adv_feature = adv_feature + 1.0/np.sqrt(s+2)*total_grad
-#         #     # adv_feature.requires_grad = False
-#         # acc_temp.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
-#
-#     acc_test = np.sqrt(np.mean(acc_temp))
-#     print("test accuracy with distributional attack {:.4f}".format(acc_test))
-
 
 def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
     acc_temp = []
@@ -234,7 +184,7 @@ def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
         adv_feature = Variable(adv_feature, requires_grad=True)
 
         # Running maximizer for adversarial example
-        optimizer_adv = torch.optim.Adam([adv_feature], lr=0.01)
+        optimizer_adv = torch.optim.Adam([adv_feature], lr=2)
         loss_phi = 0  # phi(theta,z0)
         rho = 0  # E[c(Z,Z0)]
         for n in range(T_adv):
@@ -259,43 +209,13 @@ def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
         # optimizer.step()
         # losses_adv.append(loss_adversarial.data[0])
         #
-        #
-        #
-        #
-        # feature_test.requires_grad = True
-        # logits_test = model(feature_test)
-        # loss = loss_fcn_test(logits_test[test_mask], label_test[test_mask])
-        # model.zero_grad()
-        # loss.backward()
-        # eta = torch.zeros(size=feature_test.shape)
-        # data_grad = feature_test.grad.data
-        # eta = data_grad
-        # adv_feature = feature_test + eta
-        # x0 = feature_test
-        # feature_test.requires_grad = True
-        # # adv_feature.requires_grad = True
-        # for s in range(steps):
-        #     # adv_feature.requires_grad = True
-        #     logits_adv = model(feature_test+eta)
-        #     loss_adv = loss_fcn_test(logits_adv[test_mask], label_test[test_mask])
-        #     model.zero_grad()
-        #     loss_adv.backward()
-        #     data_grad_adv = feature_test.grad.data
-        #     # feature_test.grad.zero_()
-        #     # print(feature_test.grad.data)
-        #     cost = loss_fcn_test(feature_test+eta, x0)
-        #     cost.backward()
-        #     # print(adv_feature)
-        #     total_grad = data_grad_adv - gamma * feature_test.grad.data
-        #     eta += 1.0/np.sqrt(s+2)*total_grad
-        #     adv_feature = adv_feature + eta
         acc_temp.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
 
     acc_test = np.sqrt(np.mean(acc_temp))
     print("test accuracy with distributional attack {:.4f}".format(acc_test))
 
 
-def test_fgsm(model, epsilon,test_mask):
+def test_fgsm(model, epsilon, test_mask):
     acc_temp = []
     acc_temp_attack = []
     loss_fcn_test = torch.nn.MSELoss()
@@ -336,7 +256,7 @@ if __name__ == '__main__':
             help="gpu")
     parser.add_argument("--lr", type=float, default=0.001,
             help="learning rate")
-    parser.add_argument("--n-epochs", type=int, default=10,
+    parser.add_argument("--n-epochs", type=int, default=2,
             help="number of training epochs")
     parser.add_argument("--n-input-features", type=int, default=3,
             help="number of input features")
