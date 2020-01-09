@@ -12,8 +12,8 @@ from torch.autograd import Variable
 
 from gcn import GCN
 
-torch.manual_seed(1234)
-np.random.seed(1234)
+torch.manual_seed(0)
+np.random.seed(0)
 # TODO: write a function to generate our adj, features, etc.
 bus_no = 118
 bus118data = scipy.io.loadmat('dataset_118bus.mat')
@@ -22,7 +22,7 @@ data_labels = bus118data['labels'].astype(np.float32)
 data_adj = bus118data['adj']
 
 
-window_size = np.minimum(20, data_inputs.shape[1])
+window_size = np.minimum(100, data_inputs.shape[1])
 train_portion = int(0.8 * window_size)
 train_x = data_inputs[:, :train_portion]
 train_y = data_labels[:, :train_portion]
@@ -46,10 +46,27 @@ def fgsm_attack(input_clean, epsilon, data_grad):
     purturbed_input = input_clean + epsilon * sign_datagrad
     return purturbed_input
 
-# def distr_attack(model, input_clean, epsilon, data_grad):
-#     sign_datagrad = data_grad.sign()
-#     purturbed_input = input_clean + epsilon * sign_datagrad
-#     return purturbed_input
+def distr_attack(model, loss_fcn, feature_train, label_train, gamma, T_adv):
+    feature_train, label_train = Variable(feature_train), Variable(label_train)
+    adv_feature = feature_train.data.clone()
+    adv_feature = Variable(adv_feature, requires_grad=True)
+
+    # Running maximizer for adversarial example
+    optimizer_adv = torch.optim.Adam([adv_feature], lr=0.2)
+    loss_phi = 0  # phi(theta,z0)
+    rho = 0  # E[c(Z,Z0)]
+    for n in range(T_adv):
+        optimizer_adv.zero_grad()
+        delta = adv_feature - feature_train
+        rho = torch.mean((torch.norm(delta.view(len(feature_train), -1), 2, 1) ** 2))
+        # rho = torch.mean((torch.norm(z_hat-x_,2,1)**2))
+        loss_zt = loss_fcn(model(adv_feature), label_train)
+        # -phi_gamma(theta,z)
+        loss_phi = - (loss_zt - gamma * rho)
+        loss_phi.backward()
+        optimizer_adv.step()
+    return adv_feature
+        # adjust_lr_zt(optimizer_zt, max_lr0, n + 1)
 
 
 def adjust_learning_rate(optimizer, epoch):
@@ -136,14 +153,15 @@ def main(args):
         np.random.shuffle(shufle_index)
         for t in range(train_portion):
             features, labels = load_data(shufle_index[t])
-            features.requires_grad = True
+            # features.requires_grad = True
 
             model.train()
-            if epoch >= 3:
-                t0 = time.time()
-
+            # if epoch >= 3:
+            t0 = time.time()
+            adv_features = distr_attack(model=model, loss_fcn=loss_fcn, feature_train=features,
+                                        label_train=labels, gamma=.0001, T_adv=4)
             # forward
-            logits = model(features)
+            logits = model(adv_features)
             # TO DO: change this
             loss = loss_fcn(logits[train_mask], labels[train_mask])
 
@@ -168,11 +186,11 @@ def main(args):
             print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
                   "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
                                                  acc, n_edges / np.mean(dur) / 1000))
-    test_distr(model, loss_fcn, gamma=0.001, T_adv=2, test_mask=test_mask) # Increasing T_adv does not affect very much,
-                                                                            # smaller gamma and smaller T_adv the better
-    test_fgsm(model, 2, test_mask)
+    test_distr(model, loss_fcn, gamma=0.001, T_adv=2, test_mask=test_mask) # Increasing T_adv does not affect very much,                                                                     # smaller gamma and smaller T_adv the better
+    test_fgsm(model, 200, test_mask)
 
 def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
+    model.eval()
     acc_temp = []
     loss_fcn_test = torch.nn.MSELoss()
     for iter in range(train_portion, window_size):
@@ -216,6 +234,7 @@ def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
 
 
 def test_fgsm(model, epsilon, test_mask):
+    model.eval()
     acc_temp = []
     acc_temp_attack = []
     loss_fcn_test = torch.nn.MSELoss()
@@ -256,7 +275,7 @@ if __name__ == '__main__':
             help="gpu")
     parser.add_argument("--lr", type=float, default=0.001,
             help="learning rate")
-    parser.add_argument("--n-epochs", type=int, default=2,
+    parser.add_argument("--n-epochs", type=int, default=10,
             help="number of training epochs")
     parser.add_argument("--n-input-features", type=int, default=3,
             help="number of input features")
