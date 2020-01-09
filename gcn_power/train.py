@@ -11,9 +11,17 @@ from torch.autograd import Variable
 
 
 from gcn import GCN
+import random
 
-torch.manual_seed(0)
-np.random.seed(0)
+def init_seed(seed=123):
+    '''set seed of random number generators'''
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    random.seed(seed)
+
+
+# torch.manual_seed(0)
+# np.random.seed(0)
 # TODO: write a function to generate our adj, features, etc.
 bus_no = 118
 bus118data = scipy.io.loadmat('dataset_118bus.mat')
@@ -21,7 +29,7 @@ data_inputs = bus118data['input_nodal'].astype(np.float32)
 data_labels = bus118data['labels'].astype(np.float32)
 data_adj = bus118data['adj']
 
-
+init_seed()
 window_size = np.minimum(100, data_inputs.shape[1])
 train_portion = int(0.8 * window_size)
 train_x = data_inputs[:, :train_portion]
@@ -40,6 +48,30 @@ input_test_mask = np.array(np.ones(bus_no), dtype=np.bool)
 #     for _, param_group in optimizer.state_dict():
 #         param_group['lr'] = lr
 #     return optimizer
+
+def ifgsm_attack(model, loss_fcn, optimizer, feature, label, T_adv, epsilon, lr):
+    feature, label = Variable(feature), Variable(label)
+    adv_feature = feature.data.clone()
+    adv_feature = Variable(adv_feature, requires_grad=True)
+
+    for n in range(T_adv):  # Q: why we need pass optimizer?
+        optimizer.zero_grad()
+        loss_adv = loss_fcn(model(adv_feature), label)
+        loss_adv.backward()
+        data_grad = adv_feature.grad.data
+
+        grad_ = data_grad.view(len(adv_feature), -1)
+        grad_ = grad_/torch.norm(grad_,2,1).view(len(adv_feature),1).expand_as(grad_)
+        delta_x = epsilon * grad_.view_as(data_grad)
+        delta_x[delta_x!=delta_x]=0
+        delta_x.clamp_(-epsilon, epsilon)
+        step_adv = adv_feature.data + lr * delta_x
+        total_adv = step_adv - feature.data
+        total_adv.clamp_(-epsilon, epsilon)
+        adv_feature.data = feature.data + total_adv
+
+    return adv_feature
+
 
 def fgsm_attack(input_clean, epsilon, data_grad):
     sign_datagrad = data_grad.sign()
@@ -159,7 +191,7 @@ def main(args):
             # if epoch >= 3:
             t0 = time.time()
             adv_features = distr_attack(model=model, loss_fcn=loss_fcn, feature_train=features,
-                                        label_train=labels, gamma=.0001, T_adv=4)
+                                        label_train=labels, gamma=0.000001, T_adv=20)
             # forward
             logits = model(adv_features)
             # TO DO: change this
@@ -186,8 +218,9 @@ def main(args):
             print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
                   "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
                                                  acc, n_edges / np.mean(dur) / 1000))
-    test_distr(model, loss_fcn, gamma=0.001, T_adv=2, test_mask=test_mask) # Increasing T_adv does not affect very much,                                                                     # smaller gamma and smaller T_adv the better
-    test_fgsm(model, 200, test_mask)
+    test_distr(model, loss_fcn, gamma=0.001, T_adv=20, test_mask=test_mask) # Increasing T_adv does not affect very much,                                                                     # smaller gamma and smaller T_adv the better
+    test_fgsm(model, 100, test_mask)
+    test_ifgsm(model, loss_fcn, optimizer, epsilon=100, T_adv=20, lr=0.1, test_mask=test_mask)
 
 def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
     model.eval()
@@ -256,14 +289,18 @@ def test_fgsm(model, epsilon, test_mask):
     acc_test_attack = np.sqrt(np.mean(acc_temp_attack))
     print("test accuracy {:.4f}| test accuracy with FGSM attack {:.4f}".format(acc_test, acc_test_attack))
 
-# #    TODO: test
-#     acc_temp = []
-#     for iter in range(window_size-train_portion):
-#         iter = train_portion+iter
-#         acc_temp.append(np.array(evaluate_real_image(model, load_data(iter)[0], load_data(iter)[1], test_mask)))
-#
-#     acc_test = np.sqrt(np.mean(acc_temp))
-#     print("test accuracy {:.4f}".format(acc_test))
+
+def test_ifgsm(model, loss_fcn, optimizer, epsilon, T_adv, lr, test_mask):
+    model.eval()
+    acc_temp_ifgsm = []
+
+    for iter in range(train_portion, window_size):
+        feature_test = load_data(iter)[0]
+        label_test = load_data(iter)[1]
+        adv_feature = ifgsm_attack(model, loss_fcn, optimizer, feature_test, label_test, T_adv, epsilon, lr)
+        acc_temp_ifgsm.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
+    acc_test_ifgm = np.sqrt(np.mean(acc_temp_ifgsm))
+    print("test accuracy with iFGSM attack {:.4f}".format(acc_test_ifgm))
 
 
 if __name__ == '__main__':
@@ -275,7 +312,7 @@ if __name__ == '__main__':
             help="gpu")
     parser.add_argument("--lr", type=float, default=0.001,
             help="learning rate")
-    parser.add_argument("--n-epochs", type=int, default=10,
+    parser.add_argument("--n-epochs", type=int, default=3,
             help="number of training epochs")
     parser.add_argument("--n-input-features", type=int, default=3,
             help="number of input features")
