@@ -8,6 +8,7 @@ from dgl import DGLGraph
 from dgl.data import register_data_args
 import scipy.io
 from torch.autograd import Variable
+import matplotlib.pyplot as plt
 
 
 from gcn import GCN
@@ -30,7 +31,7 @@ data_labels = bus118data['labels'].astype(np.float32)
 data_adj = bus118data['adj']
 
 init_seed()
-window_size = np.minimum(100, data_inputs.shape[1])
+window_size = np.minimum(20, data_inputs.shape[1])
 train_portion = int(0.8 * window_size)
 train_x = data_inputs[:, :train_portion]
 train_y = data_labels[:, :train_portion]
@@ -72,6 +73,18 @@ def ifgsm_attack(model, loss_fcn, optimizer, feature, label, T_adv, epsilon, lr)
 
     return adv_feature
 
+def fgsm_attack_generateor(model, loss_fcn, feature, label, epsilon_fgsm, mask):
+    feature, label = Variable(feature), Variable(label)
+    adv_feature = feature.data.clone()
+    adv_feature = Variable(adv_feature, requires_grad=True)
+    logits = model(adv_feature)
+    loss = loss_fcn(logits[mask], label[mask])
+    model.zero_grad()
+    loss.backward()
+    data_grad = adv_feature.grad.data
+    sign_datagrad = data_grad.sign()
+    adv_feature = feature + epsilon_fgsm * sign_datagrad
+    return adv_feature
 
 def fgsm_attack(input_clean, epsilon, data_grad):
     sign_datagrad = data_grad.sign()
@@ -158,7 +171,15 @@ def main(args):
     g.ndata['norm'] = norm.unsqueeze(1)
 
     # create GCN model
-    model = GCN(g,
+    model_adv = GCN(g,
+                in_feats,
+                args.n_hidden,
+                n_classes,
+                args.n_layers,
+                F.leaky_relu,
+                args.dropout)
+
+    model_non_adv = GCN(g,
                 in_feats,
                 args.n_hidden,
                 n_classes,
@@ -170,7 +191,7 @@ def main(args):
 
 
     # use optimizer
-    optimizer = torch.optim.Adam(model.parameters(),
+    optimizer = torch.optim.Adam(model_adv.parameters(),
                                  lr=args.lr, weight_decay=args.weight_decay)
     print(optimizer.state_dict()['param_groups'][0]['lr'])
 
@@ -187,13 +208,21 @@ def main(args):
             features, labels = load_data(shufle_index[t])
             # features.requires_grad = True
 
-            model.train()
+            model_non_adv.train()
+            model_adv.train()
             # if epoch >= 3:
             t0 = time.time()
-            adv_features = distr_attack(model=model, loss_fcn=loss_fcn, feature_train=features,
-                                        label_train=labels, gamma=0.000001, T_adv=20)
+            # adv_features = distr_attack(model=model, loss_fcn=loss_fcn, feature_train=features,
+            #                             label_train=labels, gamma=0.000001, T_adv=20)
+
+            # adv_features = ifgsm_attack(model=model, loss_fcn=loss_fcn, optimizer=optimizer, feature=features,
+            #                             label=labels, T_adv=20, epsilon=1, lr=0.1)
+
+            adv_features = fgsm_attack_generateor(model=model_adv, loss_fcn=loss_fcn, feature=features, label=labels,
+                                                epsilon_fgsm=0, mask=train_mask)
+
             # forward
-            logits = model(adv_features)
+            logits = model_adv(adv_features)
             # TO DO: change this
             loss = loss_fcn(logits[train_mask], labels[train_mask])
 
@@ -202,25 +231,36 @@ def main(args):
             adjust_learning_rate(optimizer, epoch)
 
             loss.backward()
-            # data_grad = features.grad.data
-            # adv_feature = fgsm_attack(features, 0, data_grad)
-            # adv_logits = model(adv_feature)
-            # loss_adv = loss_fcn(adv_logits[train_mask], labels[train_mask])
-            # loss_adv.backward()
+
             optimizer.step()
 
             if epoch >= 3:
                 dur.append(time.time() - t0)
 
-            acc = evaluate(model, features, labels, train_mask)
+            acc = evaluate(model_adv, features, labels, train_mask)
 
             learning_rate = optimizer.state_dict()['param_groups'][0]['lr']
             print("Epoch {:05d} | learning_rate {:.4f} | Iter {:05d}|  Time(s) {:.4f} | Loss {:.4f} | Accuracy {:.4f} |"
                   "ETputs(KTEPS) {:.2f}". format(epoch, learning_rate, t, np.mean(dur), loss.item(),
                                                  acc, n_edges / np.mean(dur) / 1000))
-    test_distr(model, loss_fcn, gamma=0.001, T_adv=20, test_mask=test_mask) # Increasing T_adv does not affect very much,                                                                     # smaller gamma and smaller T_adv the better
-    test_fgsm(model, 100, test_mask)
-    test_ifgsm(model, loss_fcn, optimizer, epsilon=100, T_adv=20, lr=0.1, test_mask=test_mask)
+
+    history_acc_test = {}
+    history_acc_test["nominal"] = []
+    # history_acc_test["distr"] = []
+    history_acc_test["fgsm"] = []
+    history_acc_test["ifgsm"] = []
+
+    # eps = [0, 0.001, 0.002, 0.003, 0.005, 0.008, 0.01, 0.02, 0.04, 0.06, 0.08]
+    eps = [0, .001, .005, .009, .02, 0.05, 0.08]
+    for _, i_eps in enumerate(eps):
+        # history_acc_test["distr"].append(test_distr(model_adv, loss_fcn, gamma=0.001, T_adv=20, test_mask=test_mask))
+    # Increasing T_adv does not affect very much, smaller gamma and smaller T_adv the better
+        out = test_fgsm(model_adv, epsilon=i_eps, test_mask=test_mask)
+        history_acc_test["nominal"].append(out[0])
+        history_acc_test["fgsm"].append(out[1])
+        history_acc_test["ifgsm"].append(test_ifgsm(model_adv, loss_fcn, optimizer, epsilon=i_eps, T_adv=20, lr=0.1, test_mask=test_mask))
+
+    plot_graphs(data=history_acc_test)
 
 def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
     model.eval()
@@ -250,20 +290,11 @@ def test_distr(model, loss_fcn, gamma, T_adv, test_mask):
             optimizer_adv.step()
             # adjust_lr_zt(optimizer_zt, max_lr0, n + 1)
 
-        # losses_maxItr.append(loss_phi.data[0])  # loss in max iteration phi(theta,z)
-        # rhos.append(rho.data[0])
-
-        # running the loss minimizer, using z_hat
-        # optimizer.zero_grad()
-        # loss_adversarial = loss_function(model(z_hat), y_)
-        # loss_adversarial.backward()
-        # optimizer.step()
-        # losses_adv.append(loss_adversarial.data[0])
-        #
         acc_temp.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
 
     acc_test = np.sqrt(np.mean(acc_temp))
     print("test accuracy with distributional attack {:.4f}".format(acc_test))
+    return acc_test
 
 
 def test_fgsm(model, epsilon, test_mask):
@@ -288,6 +319,7 @@ def test_fgsm(model, epsilon, test_mask):
     acc_test = np.sqrt(np.mean(acc_temp))
     acc_test_attack = np.sqrt(np.mean(acc_temp_attack))
     print("test accuracy {:.4f}| test accuracy with FGSM attack {:.4f}".format(acc_test, acc_test_attack))
+    return acc_test, acc_test_attack
 
 
 def test_ifgsm(model, loss_fcn, optimizer, epsilon, T_adv, lr, test_mask):
@@ -301,6 +333,23 @@ def test_ifgsm(model, loss_fcn, optimizer, epsilon, T_adv, lr, test_mask):
         acc_temp_ifgsm.append(np.array(evaluate_real_image(model, adv_feature, label_test, test_mask)))
     acc_test_ifgm = np.sqrt(np.mean(acc_temp_ifgsm))
     print("test accuracy with iFGSM attack {:.4f}".format(acc_test_ifgm))
+    return acc_test_ifgm
+
+def plot_graphs(data):
+    fig = plt.figure(figsize=(5, 5))
+    Colors = ['blue', 'orange', 'red', 'purple', 'grey', 'green']
+
+    for data_name, _ in data.items():
+        plt.plot(data[data_name], label=data_name)
+        # plt.legend()
+
+    plt.legend()
+    plt.xlabel('epsilon')
+    plt.ylabel(data_name)
+    plt.title("Nominal training")
+    plt.show()
+
+
 
 
 if __name__ == '__main__':
@@ -312,7 +361,7 @@ if __name__ == '__main__':
             help="gpu")
     parser.add_argument("--lr", type=float, default=0.001,
             help="learning rate")
-    parser.add_argument("--n-epochs", type=int, default=3,
+    parser.add_argument("--n-epochs", type=int, default=2,
             help="number of training epochs")
     parser.add_argument("--n-input-features", type=int, default=3,
             help="number of input features")

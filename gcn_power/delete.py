@@ -1,5 +1,7 @@
 import numpy as np
 import math
 import torch
-x= torch.tensor([[1], [2], [3], [4]])
-print(torch.unsqueeze(x, 0))
+eps = [100, -2, -10]
+
+for i, j in enumerate(eps):
+    print(i, j)

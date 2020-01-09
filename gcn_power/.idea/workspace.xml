@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6f384f4a-0151-4418-8857-60874fc678d0" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/delete.py" beforeDir="false" afterPath="$PROJECT_DIR$/delete.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -15,13 +16,11 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/train.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="287">
-              <caret line="189" column="25" lean-forward="true" selection-start-line="189" selection-start-column="25" selection-end-line="189" selection-end-column="25" />
+            <state relative-caret-position="362">
+              <caret line="223" column="21" lean-forward="true" selection-start-line="223" selection-start-column="21" selection-end-line="223" selection-end-column="21" />
               <folding>
                 <element signature="e#0#21#0" expanded="true" />
                 <element signature="e#1018#1063#0" />
-                <element signature="e#5692#5724#0" />
-                <element signature="e#7956#8034#0" />
               </folding>
             </state>
           </provider>
@@ -31,7 +30,7 @@
         <entry file="file://$USER_HOME$/anaconda3/envs/Environment_DeepQNetw/lib/python3.6/site-packages/dgl/graph_index.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="506">
-              <caret line="1284" column="28" lean-forward="true" selection-start-line="1284" selection-start-column="28" selection-end-line="1284" selection-end-column="28" />
+              <caret line="1284" column="28" selection-start-line="1284" selection-start-column="28" selection-end-line="1284" selection-end-column="28" />
             </state>
           </provider>
         </entry>
@@ -53,8 +52,11 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/delete.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="46">
-              <caret line="4" column="28" selection-start-line="4" selection-start-column="28" selection-end-line="4" selection-end-column="28" />
+            <state relative-caret-position="161">
+              <caret line="7" selection-start-line="7" selection-end-line="7" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -84,8 +86,8 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/delete.py" />
         <option value="$PROJECT_DIR$/utils.py" />
+        <option value="$PROJECT_DIR$/delete.py" />
         <option value="$PROJECT_DIR$/train.py" />
       </list>
     </option>
@@ -120,7 +122,7 @@
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$USER_HOME$/PycharmProjects/MArk-weireless/Original code" />
     <property name="restartRequiresConfirmation" value="false" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
@@ -158,13 +160,10 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="train" type="PythonConfigurationType" factoryName="Python">
+    <configuration name="train" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="gcn_power" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -172,7 +171,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train.py" />
       <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
       <option name="REDIRECT_INPUT" value="false" />
@@ -181,6 +180,8 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.train" />
+        <item itemvalue="Python.train" />
         <item itemvalue="Python.delete" />
       </list>
     </recent_temporary>
@@ -200,21 +201,20 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="-4" width="1855" height="1084" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.14372581" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.41794088" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.23751274" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39959225" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Version Control" order="7" />
       <window_info anchor="bottom" id="Terminal" order="8" />
-      <window_info anchor="bottom" id="Python Console" order="9" weight="0.32925585" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="9" visible="true" weight="0.32925585" />
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
@@ -318,20 +318,21 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/delete.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="46">
-          <caret line="4" column="28" selection-start-line="4" selection-start-column="28" selection-end-line="4" selection-end-column="28" />
+        <state relative-caret-position="161">
+          <caret line="7" selection-start-line="7" selection-end-line="7" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/train.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="287">
-          <caret line="189" column="25" lean-forward="true" selection-start-line="189" selection-start-column="25" selection-end-line="189" selection-end-column="25" />
+        <state relative-caret-position="362">
+          <caret line="223" column="21" lean-forward="true" selection-start-line="223" selection-start-column="21" selection-end-line="223" selection-end-column="21" />
           <folding>
             <element signature="e#0#21#0" expanded="true" />
             <element signature="e#1018#1063#0" />
-            <element signature="e#5692#5724#0" />
-            <element signature="e#7956#8034#0" />
           </folding>
         </state>
       </provider>
